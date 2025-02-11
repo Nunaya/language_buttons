@@ -5,120 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Button Timer</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            margin-top: 50px; 
-            background-color: #e8f5e9; /* Light pastel green */
-            color: #2e7d32; /* Darker green for text */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
         }
-        
-        .button-container { 
-            margin: 20px; 
+        #activeLabel {
+            font-size: 18px;
+            margin-bottom: 10px;
         }
-        
-        button { 
-            padding: 15px 25px; 
-            margin: 10px; 
-            font-size: 18px; 
-            border: none; 
-            border-radius: 12px; 
-            background-color: #a5d6a7; /* Soft green */
-            color: #2e7d32; 
-            cursor: pointer; 
-            transition: background-color 0.3s, transform 0.2s; 
+        #hiddenMessage {
+            font-size: 14px;
+            color: red;
+            display: none;
         }
-        
-        button:hover { 
-            background-color: #81c784; /* Slightly darker green */
-            transform: scale(1.05);
+        .button-container {
+            margin-top: 20px;
         }
-        
-        button:active { 
-            transform: scale(0.98); 
+        .btn {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            cursor: pointer;
         }
-        
-        .active { 
-            background-color: #ff9800; /* Orange highlight */
-            color: white; 
+        .active-me {
+            background-color: goldenrod;
+            color: white;
         }
-        
-        #status {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        #alert { 
-            font-size: 18px; 
-            color: #d32f2f; /* Red alert color */
-        }
-        
-        .hidden { 
-            display: none; 
+        .active-other {
+            background-color: darkblue;
+            color: white;
         }
     </style>
 </head>
 <body>
 
-    <h2 id="status">Active: ME - Time: 0.00 min (Total: 0.00 min)</h2>
-    <p id="alert" class="hidden">More than 480 minutes elapsed!</p>
+    <div id="activeLabel">Active: ME - Time: 0.00 min</div>
+    <div id="hiddenMessage">More than 480 minutes elapsed!</div>
 
     <div class="button-container">
-        <button id="UK" onclick="switchButton('UK')">UK</button>
-        <button id="NO" onclick="switchButton('NO')">NO</button>
-        <button id="CZ_SV" onclick="switchButton('CZ_SV')">CZ, SV</button>
-        <button id="ME" onclick="switchButton('ME')">ME</button>
+        <button class="btn" data-btn="UK">UK</button>
+        <button class="btn" data-btn="NO">NO</button>
+        <button class="btn" data-btn="CZ">CZ</button>
+        <button class="btn" data-btn="SV">SV</button>
+        <button class="btn" data-btn="CY">CY</button>
+        <button class="btn active-me" data-btn="ME">ME</button>
     </div>
 
     <script>
-        const buttons = ["UK", "NO", "CZ_SV", "ME"];
+        const buttons = ["UK", "NO", "CZ", "SV", "CY", "ME"];
         let times = Object.fromEntries(buttons.map(btn => [btn, 0]));
         let activeButton = "ME";
         let startTime = Date.now();
+
+        const activeLabel = document.getElementById('activeLabel');
+        const hiddenMessage = document.getElementById('hiddenMessage');
+        const buttonElements = document.querySelectorAll('.btn');
+
+        buttonElements.forEach(button => {
+            button.addEventListener('click', () => switchButton(button.dataset.btn));
+        });
 
         function switchButton(button) {
             const now = Date.now();
             times[activeButton] += (now - startTime) / 1000;
             startTime = now;
             activeButton = button;
-            updateUI();
-        }
 
-        function updateUI() {
-            const now = Date.now();
-            const currentElapsed = ((now - startTime) / 60).toFixed(2);
-            const totalElapsed = (times[activeButton] / 60).toFixed(2);
-            const overallTime = (Object.values(times).reduce((a, b) => a + b, 0) / 60).toFixed(2);
-            
-            document.getElementById("status").innerText = `Active: ${activeButton} - Time: ${currentElapsed} min (Total: ${totalElapsed} min)`;
-
-            document.querySelectorAll('button').forEach(btn => {
-                btn.classList.remove('active');
+            buttonElements.forEach(btn => {
+                if (btn.dataset.btn === button) {
+                    btn.classList.add(button === "ME" ? "active-me" : "active-other");
+                } else {
+                    btn.classList.remove("active-me", "active-other");
+                }
             });
-            
-            document.getElementById(activeButton).classList.add('active');
 
-            if (overallTime >= 480) {
-                document.getElementById('alert').classList.remove('hidden');
-            } else {
-                document.getElementById('alert').classList.add('hidden');
-            }
+            updateLabel();
         }
 
-        setInterval(updateUI, 100);
-
-        window.onbeforeunload = function() {
+        function updateLabel() {
             const now = Date.now();
             times[activeButton] += (now - startTime) / 1000;
+            startTime = now;
+
+            const elapsedTime = (times[activeButton] / 60).toFixed(2);
+            const totalTime = Object.values(times).reduce((a, b) => a + b, 0) / 60;
+
+            if (activeButton === "ME") {
+                activeLabel.textContent = `Active: ${activeButton} - Time: ${elapsedTime}\t ${totalTime.toFixed(0)} / 480 min`;
+            } else {
+                activeLabel.textContent = `Active: ${activeButton} - Time: ${elapsedTime} min`;
+            }
+
+            if (totalTime >= 480) {
+                hiddenMessage.style.display = 'block';
+            } else {
+                hiddenMessage.style.display = 'none';
+            }
+
+            requestAnimationFrame(updateLabel);
+        }
+
+        window.addEventListener('beforeunload', (e) => {
+            times[activeButton] += (Date.now() - startTime) / 1000;
             console.log("\nSummary of time spent per button:");
-            console.log("+--------+------------+");
-            console.log("| Btn    | Time (min) |");
-            console.log("+--------+------------+");
+            console.log("+----+----------+");
+            console.log("| Btn | Time (min) |");
+            console.log("+----+----------+");
             buttons.forEach(btn => {
-                console.log(`| ${btn.padEnd(6)} | ${(times[btn] / 60).toFixed(2).padStart(10)} |`);
+                console.log(`| ${btn.padEnd(2)} | ${(times[btn] / 60).toFixed(2).padStart(8)} |`);
             });
-            console.log("+--------+------------+");
-        };
+            console.log("+----+----------+");
+        });
+
+        updateLabel();
     </script>
+
 </body>
 </html>

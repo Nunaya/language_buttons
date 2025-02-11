@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -61,14 +60,14 @@
 </head>
 <body>
 
-    <h2 id="status">Active: ME - Time: 0.00 min</h2>
+    <h2 id="status">Active: ME - Time: 0.00 min (Total: 0.00 min)</h2>
     <p id="alert" class="hidden">More than 480 minutes elapsed!</p>
 
     <div class="button-container">
-        <button onclick="switchButton('UK')">UK</button>
-        <button onclick="switchButton('NO')">NO</button>
-        <button onclick="switchButton('CZ_SV')" id="CZ_SV">CZ, SV</button>
-        <button onclick="switchButton('ME')" id="ME">ME</button>
+        <button id="UK" onclick="switchButton('UK')">UK</button>
+        <button id="NO" onclick="switchButton('NO')">NO</button>
+        <button id="CZ_SV" onclick="switchButton('CZ_SV')">CZ, SV</button>
+        <button id="ME" onclick="switchButton('ME')">ME</button>
     </div>
 
     <script>
@@ -86,23 +85,20 @@
         }
 
         function updateUI() {
-            const elapsedTime = (times[activeButton] / 60).toFixed(2);
-            const totalTime = (Object.values(times).reduce((a, b) => a + b, 0) / 60).toFixed(0);
-            const statusText = activeButton === "ME" ?
-                `Active: ${activeButton} - Time: ${elapsedTime}  ${totalTime} / 480 min` :
-                `Active: ${activeButton} - Time: ${elapsedTime} min`;
+            const now = Date.now();
+            const currentElapsed = ((now - startTime) / 60).toFixed(2);
+            const totalElapsed = (times[activeButton] / 60).toFixed(2);
+            const overallTime = (Object.values(times).reduce((a, b) => a + b, 0) / 60).toFixed(2);
             
-            document.getElementById("status").innerText = statusText;
-            
+            document.getElementById("status").innerText = `Active: ${activeButton} - Time: ${currentElapsed} min (Total: ${totalElapsed} min)`;
+
             document.querySelectorAll('button').forEach(btn => {
                 btn.classList.remove('active');
             });
             
-            if (document.getElementById(activeButton)) {
-                document.getElementById(activeButton).classList.add('active');
-            }
+            document.getElementById(activeButton).classList.add('active');
 
-            if (totalTime >= 480) {
+            if (overallTime >= 480) {
                 document.getElementById('alert').classList.remove('hidden');
             } else {
                 document.getElementById('alert').classList.add('hidden');
